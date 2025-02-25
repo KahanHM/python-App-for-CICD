@@ -160,21 +160,22 @@ stage('Install Docker Compose on EC2') {
                 echo 'Checking and installing Nginx if necessary...'
 
                 sh """
-                ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} << 'EOF'
+                ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} '
                 # Install Nginx if not installed
                 if ! command -v nginx &> /dev/null; then
-                    echo 'Nginx not found, installing...'
+                    echo "Nginx not found, installing..."
                     sudo apt-get update
                     sudo apt-get install -y nginx
                 else
-                    echo 'Nginx is already installed.'
+                    echo "Nginx is already installed."
                 fi
-                EOF
+                '
                 """
             }
         }
     }
 }
+
 
 }
 }
