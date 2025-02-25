@@ -171,16 +171,60 @@ stage('Install Docker Compose on EC2') {
                         sudo docker-compose up -d
                         EOF
                         """
-
-                        echo 'Setting up port forwarding...'
-                        sh """
-                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
-                        sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 5000
-                        EOF
-                        """
                     }
                 }
             }
        }
+       stage('Setup Nginx Reverse Proxy') {
+    steps {
+        withCredentials([
+            sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
+            string(credentialsId: 'Host', variable: 'Host')
+        ]) {
+            script {
+                echo 'Setting up Nginx reverse proxy for Flask app...'
+
+                sh """
+                ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} << 'EOF'
+                # Install Nginx if not installed
+                if ! command -v nginx &> /dev/null; then
+                    echo 'Nginx not found, installing...'
+                    sudo apt-get update
+                    sudo apt-get install -y nginx
+                else
+                    echo 'Nginx is already installed.'
+                fi
+                
+                # Configure Nginx reverse proxy
+                echo 'Configuring Nginx...'
+                sudo bash -c 'cat > /etc/nginx/sites-available/flask-app <<EOL
+                server {
+                    listen 80;
+                    server_name _;
+                    
+                    location / {
+                        proxy_pass http://127.0.0.1:5000;
+                        proxy_set_header Host \$host;
+                        proxy_set_header X-Real-IP \$remote_addr;
+                        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    }
+                }
+                EOL'
+                
+                # Enable the new config and restart Nginx
+                sudo ln -sf /etc/nginx/sites-available/flask-app /etc/nginx/sites-enabled/
+                sudo nginx -t && sudo systemctl restart nginx
+                
+                # Allow port 80 in firewall
+                sudo ufw allow 80/tcp || echo 'UFW not enabled, skipping firewall rule.'
+                
+                echo 'Nginx setup complete. Flask app is now accessible on port 80.'
+                EOF
+                """
+            }
+        }
+    }
+}
+
     }
 }

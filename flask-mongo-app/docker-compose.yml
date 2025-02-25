@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   flask-app:
-    build: .
+    image: kahanhm/flask-mongo-app:latest
     ports:
       - "5000:5000"
     depends_on:
