@@ -108,6 +108,8 @@ pipeline {
                         sudo apt-get update
                         sudo apt-get install -y docker-ce
                         sudo usermod -aG docker \$USER
+                        sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+                        sudo chmod +x /usr/local/bin/docker-compose
                     EOF
                     """
                     echo 'Docker installation complete. The user may need to log out and log back in for group changes to take effect.'
@@ -121,33 +123,33 @@ pipeline {
 
         
 
-        // Install Docker Compose on EC2 
-        stage('Install Docker Compose on EC2') {
-            steps {
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
-                    string(credentialsId: 'Host', variable: 'Host')
-                ]) {
-                    script {
-                        def dockerComposeInstalled = sh(script: """
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} 'docker-compose --version' || echo "Docker Compose not installed"
-                        """, returnStatus: true)
+        // // Install Docker Compose on EC2 
+        // stage('Install Docker Compose on EC2') {
+        //     steps {
+        //         withCredentials([
+        //             sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
+        //             string(credentialsId: 'Host', variable: 'Host')
+        //         ]) {
+        //             script {
+        //                 def dockerComposeInstalled = sh(script: """
+        //                     ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} 'docker-compose --version' || echo "Docker Compose not installed"
+        //                 """, returnStatus: true)
 
-                        if (dockerComposeInstalled != 0) {
-                            echo 'Docker Compose is not installed, installing Docker Compose on EC2...'
-                            sh """
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} << 'EOF'
-                            sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
-                            sudo chmod +x /usr/local/bin/docker-compose
-                            EOF
-                            """
-                        } else {
-                            echo 'Docker Compose is already installed on EC2.'
-                        }
-                    }
-                }
-            }
-        }
+        //                 if (dockerComposeInstalled != 0) {
+        //                     echo 'Docker Compose is not installed, installing Docker Compose on EC2...'
+        //                     sh """
+        //                     ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} << 'EOF'
+        //                     sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+        //                     sudo chmod +x /usr/local/bin/docker-compose
+        //                     EOF
+        //                     """
+        //                 } else {
+        //                     echo 'Docker Compose is already installed on EC2.'
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         // //  Deploy with Docker Compose and Port Forwarding
         // stage('Deploy with Docker Compose and Port Forwarding') {
