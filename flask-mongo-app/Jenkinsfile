@@ -4,29 +4,72 @@ pipeline {
     //     IMAGE_NAME = 'your-dockerhub-username/flask-mongo-app'
     // }
     stages {
-        stage('Clone Repo') {
+        // Step 1: Clone or Pull Repo
+        stage('Clone or Pull Repo') {
             steps {
-                sh 'git clone https://github.com/KahanHM/python-App-for-CICD.git'
+                script {
+                    if (fileExists('python-App-for-CICD')) {
+                        echo 'Repository already exists, pulling latest changes...'
+                        sh 'cd python-App-for-CICD && git pull origin main'
+                    } else {
+                        echo 'Cloning the repository...'
+                        sh 'git clone https://github.com/KahanHM/python-App-for-CICD.git'
+                    }
+                }
             }
         }
-        stage('Clone ') {
+
+        // Step 2: Check if Python is installed, if not install it
+        stage('Check and Install Python') {
             steps {
-                sh '''
-                cd python-App-for-CICD/flask-mongo-app
-                ls -la
-                '''
+                script {
+                    def pythonInstalled = sh(script: 'python3 --version', returnStatus: true)
+                    if (pythonInstalled != 0) {
+                        echo 'Python is not installed, installing Python...'
+                        sh 'sudo apt-get update && sudo apt-get install -y python3'
+                    } else {
+                        echo 'Python is already installed.'
+                    }
+                }
             }
         }
-        // stage('Run Tests') {
-        //     steps {
-        //         sh 'pytest tests/test_app.py'
-        //     }
-        // }
-        // stage('Build Docker Image') {
-        //     steps {
-        //         sh 'docker build -t $IMAGE_NAME .'
-        //     }
-        // }
+
+        // Step 3: Check if Docker is installed, if not install it
+        stage('Check and Install Docker') {
+            steps {
+                script {
+                    def dockerInstalled = sh(script: 'docker --version', returnStatus: true)
+                    if (dockerInstalled != 0) {
+                        echo 'Docker is not installed, installing Docker...'
+                        sh '''
+                        sudo apt-get update
+                        sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+                        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+                        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+                        sudo apt-get update
+                        sudo apt-get install -y docker-ce
+                        '''
+                    } else {
+                        echo 'Docker is already installed.'
+                    }
+                }
+            }
+        }
+
+       
+
+        // Step 5: Build Docker image
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo 'Building Docker Image...'
+                    sh '''
+                    cd python-App-for-CICD/flask-mongo-app
+                    docker build -t $IMAGE_NAME .
+                    '''
+                }
+            }
+        }
         // stage('Push to Docker Hub') {
         //     steps {
         //         withDockerRegistry([credentialsId: 'docker-hub-credentials', url: '']) {
