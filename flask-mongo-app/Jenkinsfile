@@ -2,7 +2,6 @@ pipeline {
     agent any
     environment {
         IMAGE_NAME = 'kahanhm/flask-mongo-app'
-
     }
     stages {
         // Step 1: Clone or Pull Repo
@@ -58,8 +57,6 @@ pipeline {
             }
         }
 
-       
-
         // Step 5: Build Docker image
         stage('Build Docker Image') {
             steps {
@@ -72,6 +69,8 @@ pipeline {
                 }
             }
         }
+
+        // Step 6: Push to Docker Hub
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_TOKEN', usernameVariable: 'DOCKER_USERNAME')]) {
@@ -82,7 +81,9 @@ pipeline {
                         """
                     }
                 }
+            }
         }
+
         // stage('Deploy to EC2') {
         //     steps {
         //         sshagent(['ec2-ssh-key']) {
@@ -97,6 +98,6 @@ pipeline {
         //             '''
         //         }
         //     }
-        }
+        // }
     }
-// }
+}
