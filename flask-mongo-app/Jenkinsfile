@@ -210,10 +210,22 @@ stage('Install Docker Compose on EC2') {
                 
                 # Enable the new config and restart Nginx
                 sudo ln -sf /etc/nginx/sites-available/flask-app /etc/nginx/sites-enabled/
-                sudo nginx -t && sudo systemctl restart nginx
+
+                # Test the Nginx configuration
+                if ! sudo nginx -t; then
+                    echo 'Nginx configuration test failed. Please check the configuration.'
+                    exit 1
+                fi
                 
-                # Allow port 80 in firewall
-                sudo ufw allow 80/tcp || echo 'UFW not enabled, skipping firewall rule.'
+                # Restart Nginx if the configuration is valid
+                sudo systemctl restart nginx
+                
+                # Allow port 80 in firewall if UFW is enabled
+                if command -v ufw &> /dev/null; then
+                    sudo ufw allow 80/tcp || echo 'Failed to add firewall rule.'
+                else
+                    echo 'UFW is not enabled, skipping firewall rule.'
+                fi
 
                 echo 'Nginx setup complete. Flask app is now accessible on port 80.'
                 EOF
@@ -223,6 +235,5 @@ stage('Install Docker Compose on EC2') {
     }
 }
 
-
-    }
+}
 }
