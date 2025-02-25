@@ -150,14 +150,14 @@ stage('Install Docker Compose on EC2') {
 }
 
 
-    stage('Setup Nginx Reverse Proxy') {
+   stage('Install Nginx if Not Installed') {
     steps {
         withCredentials([
             sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
             string(credentialsId: 'Host', variable: 'Host')
         ]) {
             script {
-                echo 'Setting up Nginx reverse proxy for Flask app...'
+                echo 'Checking and installing Nginx if necessary...'
 
                 sh """
                 ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} << 'EOF'
@@ -169,45 +169,6 @@ stage('Install Docker Compose on EC2') {
                 else
                     echo 'Nginx is already installed.'
                 fi
-                
-                # Configure Nginx reverse proxy
-                echo 'Configuring Nginx...'
-                sudo bash -c 'cat > /etc/nginx/sites-available/flask-app <<EOL
-server {
-    listen 80;
-    server_name _;
-
-    location / {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_set_header Host \\$host;
-        proxy_set_header X-Real-IP \\$remote_addr;
-        proxy_set_header X-Forwarded-For \\$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \\$scheme;
-    }
-}
-EOL'
-                
-                # Enable the new config and restart Nginx
-                sudo ln -sf /etc/nginx/sites-available/flask-app /etc/nginx/sites-enabled/
-                sudo rm -f /etc/nginx/sites-enabled/default  # Remove default config if it exists
-
-                # Test the Nginx configuration
-                if ! sudo nginx -t; then
-                    echo 'Nginx configuration test failed. Please check the configuration.'
-                    exit 1
-                fi
-                
-                # Restart Nginx if the configuration is valid
-                sudo systemctl restart nginx
-                
-                # Allow port 80 in firewall if UFW is enabled
-                if command -v ufw &> /dev/null; then
-                    sudo ufw allow 80/tcp || echo 'Failed to add firewall rule.'
-                else
-                    echo 'UFW is not enabled, skipping firewall rule.'
-                fi
-
-                echo 'Nginx setup complete. Flask app is now accessible on port 80.'
                 EOF
                 """
             }
