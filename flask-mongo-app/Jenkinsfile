@@ -136,7 +136,7 @@ pipeline {
                         if (dockerComposeInstalled != 0) {
                             echo 'Docker Compose is not installed, installing Docker Compose on EC2...'
                             sh """
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} << 'EOF'
                             sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
                             sudo chmod +x /usr/local/bin/docker-compose
                             EOF
