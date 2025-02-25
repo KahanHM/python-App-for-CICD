@@ -97,7 +97,7 @@ pipeline {
                 ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} 'which docker || echo "Docker not installed"'
             """, returnStatus: true)
             
-            if (dockerInstalled != 0) {
+            if (dockerInstalled != 1) {
                 echo 'Docker is not installed, installing Docker on EC2...'
                 sh """
                 ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
