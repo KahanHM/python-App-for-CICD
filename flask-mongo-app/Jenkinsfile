@@ -150,27 +150,6 @@ stage('Install Docker Compose on EC2') {
 }
 
 
-        stage('Deploy with Docker Compose and Port Forwarding') {
-    steps {
-        withCredentials([
-            sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
-            string(credentialsId: 'Host', variable: 'Host')
-        ]) {
-            script {
-                echo 'Copying docker-compose.yml to EC2 instance...'
-                sh """
-                scp -o StrictHostKeyChecking=no -i ${SSH_KEY} flask-mongo-app/docker-compose.yml ${USER}@${Host}:/home/ubuntu/
-                """
-
-                echo 'Deploying application with Docker Compose...'
-                sh """
-                ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} "cd /home/ubuntu && sudo docker-compose up -d"
-                """
-            }
-        }
-    }
-}
-
        stage('Setup Nginx Reverse Proxy') {
     steps {
         withCredentials([
@@ -210,6 +189,7 @@ stage('Install Docker Compose on EC2') {
                 
                 # Enable the new config and restart Nginx
                 sudo ln -sf /etc/nginx/sites-available/flask-app /etc/nginx/sites-enabled/
+                sudo rm -f /etc/nginx/sites-enabled/default  # Remove default config if it exists
 
                 # Test the Nginx configuration
                 if ! sudo nginx -t; then
