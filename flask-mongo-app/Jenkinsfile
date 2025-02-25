@@ -87,34 +87,36 @@ pipeline {
         // Install Docker on EC2 (only if necessary)
         stage('Install Docker on EC2') {
             steps {
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
-                    string(credentialsId: 'Host', variable: 'Host')
-                ]) {
-                    script {
-                        def dockerInstalled = sh(script: """
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} 'docker --version' || echo "Docker not installed"
-                        """, returnStatus: true)
-                        if (dockerInstalled != 0) {
-                            echo 'Docker is not installed, installing Docker on EC2...'
-                            sh """
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
-                            sudo apt-get update
-                            sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-                            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-                            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable"
-                            sudo apt-get update
-                            sudo apt-get install -y docker-ce
-                            sudo usermod -aG docker \$USER
-                            EOF
-                            """
-                        } else {
-                            echo 'Docker is already installed on EC2.'
-                        }
-                    }
-                }
+            withCredentials([
+        sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
+        string(credentialsId: 'Host', variable: 'Host')
+    ]) {
+        script {
+            // Check if Docker is installed using 'which docker'
+            def dockerInstalled = sh(script: """
+                ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} 'which docker || echo "Docker not installed"'
+            """, returnStatus: true)
+            
+            if (dockerInstalled != 0) {
+                echo 'Docker is not installed, installing Docker on EC2...'
+                sh """
+                ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
+                sudo apt-get update
+                sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+                sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable"
+                sudo apt-get update
+                sudo apt-get install -y docker-ce
+                sudo usermod -aG docker \$USER
+                EOF
+                """
+            } else {
+                echo 'Docker is already installed on EC2.'
             }
         }
+    }
+}
+
 
         // // Install Docker Compose on EC2 
         // stage('Install Docker Compose on EC2') {
