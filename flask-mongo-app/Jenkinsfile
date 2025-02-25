@@ -2,6 +2,7 @@ pipeline {
     agent any
     environment {
         IMAGE_NAME = 'kahanhm/flask-mongo-app'
+        DOCKER_REGISTRY = 'https://index.docker.io/v1/' 
     }
     stages {
         // Step 1: Clone or Pull Repo
@@ -71,13 +72,13 @@ pipeline {
                 }
             }
         }
-        // stage('Push to Docker Hub') {
-        //     steps {
-        //         withDockerRegistry([credentialsId: 'docker-hub-credentials', url: '']) {
-        //             sh 'docker push $IMAGE_NAME'
-        //         }
-        //     }
-        // }
+        stage('Push to Docker Hub') {
+            steps {
+                withDockerRegistry([credentialsId: 'docker-hub-credentials', url: 'DOCKER_REGISTRY']) {
+                    sh 'docker push $IMAGE_NAME'
+                }
+            }
+        }
         // stage('Deploy to EC2') {
         //     steps {
         //         sshagent(['ec2-ssh-key']) {
