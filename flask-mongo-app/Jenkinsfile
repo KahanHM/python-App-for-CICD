@@ -1,45 +1,53 @@
 pipeline {
     agent any
-    environment {
-        IMAGE_NAME = 'your-dockerhub-username/flask-mongo-app'
-    }
+    // environment {
+    //     IMAGE_NAME = 'your-dockerhub-username/flask-mongo-app'
+    // }
     stages {
         stage('Clone Repo') {
             steps {
-                git 'https://github.com/your-repo-url.git'
+                sh 'git clone https://github.com/KahanHM/python-App-for-CICD.git'
             }
         }
-        stage('Run Tests') {
+        stage('Clone ') {
             steps {
-                sh 'pytest tests/test_app.py'
+                sh '''
+                cd python-App-for-CICD\flask-mongo-app
+                ls -la
+                '''
             }
         }
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t $IMAGE_NAME .'
-            }
-        }
-        stage('Push to Docker Hub') {
-            steps {
-                withDockerRegistry([credentialsId: 'docker-hub-credentials', url: '']) {
-                    sh 'docker push $IMAGE_NAME'
-                }
-            }
-        }
-        stage('Deploy to EC2') {
-            steps {
-                sshagent(['ec2-ssh-key']) {
-                    sh '''
-                    ssh ubuntu@your-ec2-ip <<EOF
-                    docker pull $IMAGE_NAME
-                    docker stop flask-app || true
-                    docker rm flask-app || true
-                    docker run -d -p 5000:5000 --name flask-app --link mongo:mongo $IMAGE_NAME
-                    sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 5000
-                    EOF
-                    '''
-                }
-            }
+        // stage('Run Tests') {
+        //     steps {
+        //         sh 'pytest tests/test_app.py'
+        //     }
+        // }
+        // stage('Build Docker Image') {
+        //     steps {
+        //         sh 'docker build -t $IMAGE_NAME .'
+        //     }
+        // }
+        // stage('Push to Docker Hub') {
+        //     steps {
+        //         withDockerRegistry([credentialsId: 'docker-hub-credentials', url: '']) {
+        //             sh 'docker push $IMAGE_NAME'
+        //         }
+        //     }
+        // }
+        // stage('Deploy to EC2') {
+        //     steps {
+        //         sshagent(['ec2-ssh-key']) {
+        //             sh '''
+        //             ssh ubuntu@your-ec2-ip <<EOF
+        //             docker pull $IMAGE_NAME
+        //             docker stop flask-app || true
+        //             docker rm flask-app || true
+        //             docker run -d -p 5000:5000 --name flask-app --link mongo:mongo $IMAGE_NAME
+        //             sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 5000
+        //             EOF
+        //             '''
+        //         }
+        //     }
         }
     }
-}
+// }
