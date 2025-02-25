@@ -5,4 +5,5 @@
 ✅ CRUD API Endpoints  
 ✅ Dockerized (Multi-stage & Distroless)  
 ✅ Jenkins CI/CD Pipeline  
-✅ AWS EC2 Deployment  
+✅ AWS EC2 Deployment using jenkins
+
