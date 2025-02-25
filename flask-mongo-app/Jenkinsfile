@@ -4,7 +4,7 @@ pipeline {
         IMAGE_NAME = 'kahanhm/flask-mongo-app'
     }
     stages {
-        // Step 1: Clone or Pull Repo
+        // Clone or Pull Repo
         stage('Clone or Pull Repo') {
             steps {
                 script {
@@ -19,7 +19,7 @@ pipeline {
             }
         }
 
-        // Step 2: Check if Python is installed, if not install it
+        //  Check and Install Python
         stage('Check and Install Python') {
             steps {
                 script {
@@ -34,7 +34,7 @@ pipeline {
             }
         }
 
-        // Step 3: Check if Docker is installed, if not install it
+        //  Check and Install Docker
         stage('Check and Install Docker') {
             steps {
                 script {
@@ -57,7 +57,7 @@ pipeline {
             }
         }
 
-        // Step 5: Build Docker image
+        // Build Docker image
         stage('Build Docker Image') {
             steps {
                 script {
@@ -70,7 +70,7 @@ pipeline {
             }
         }
 
-        // Step 6: Push to Docker Hub
+        //  Push to Docker Hub
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_TOKEN', usernameVariable: 'DOCKER_USERNAME')]) {
@@ -84,17 +84,95 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2') {
+        // Install Docker on EC2 (only if necessary)
+        stage('Install Docker on EC2') {
             steps {
                 withCredentials([
                     sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
                     string(credentialsId: 'Host', variable: 'Host')
                 ]) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} "ls -la"
-                    """
+                    script {
+                        def dockerInstalled = sh(script: """
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} 'docker --version' || echo "Docker not installed"
+                        """, returnStatus: true)
+                        if (dockerInstalled != 0) {
+                            echo 'Docker is not installed, installing Docker on EC2...'
+                            sh """
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
+                            sudo apt-get update
+                            sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+                            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+                            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable"
+                            sudo apt-get update
+                            sudo apt-get install -y docker-ce
+                            sudo usermod -aG docker \$USER
+                            EOF
+                            """
+                        } else {
+                            echo 'Docker is already installed on EC2.'
+                        }
+                    }
                 }
-                
+            }
+        }
+
+        // Install Docker Compose on EC2 
+        stage('Install Docker Compose on EC2') {
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
+                    string(credentialsId: 'Host', variable: 'Host')
+                ]) {
+                    script {
+                        def dockerComposeInstalled = sh(script: """
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} 'docker-compose --version' || echo "Docker Compose not installed"
+                        """, returnStatus: true)
+
+                        if (dockerComposeInstalled != 0) {
+                            echo 'Docker Compose is not installed, installing Docker Compose on EC2...'
+                            sh """
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
+                            sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+                            sudo chmod +x /usr/local/bin/docker-compose
+                            EOF
+                            """
+                        } else {
+                            echo 'Docker Compose is already installed on EC2.'
+                        }
+                    }
+                }
+            }
+        }
+
+        //  Deploy with Docker Compose and Port Forwarding
+        stage('Deploy with Docker Compose and Port Forwarding') {
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
+                    string(credentialsId: 'Host', variable: 'Host')
+                ]) {
+                    script {
+                        echo 'Copying docker-compose.yml to EC2 instance...'
+                        sh """
+                        scp -o StrictHostKeyChecking=no -i ${SSH_KEY} ${WORKSPACE}/docker-compose.yml ${USER}@${Host}:/home/ubuntu/
+                        """
+
+                        echo 'Deploying application with Docker Compose...'
+                        sh """
+                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
+                        cd /home/ubuntu
+                        sudo docker-compose up -d
+                        EOF
+                        """
+
+                        echo 'Setting up port forwarding...'
+                        sh """
+                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
+                        sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 5000
+                        EOF
+                        """
+                    }
+                }
             }
         }
     }
