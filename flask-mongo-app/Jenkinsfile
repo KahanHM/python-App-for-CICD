@@ -1,8 +1,8 @@
 pipeline {
     agent any
-    // environment {
-    //     IMAGE_NAME = 'your-dockerhub-username/flask-mongo-app'
-    // }
+    environment {
+        IMAGE_NAME = 'kahanhm/flask-mongo-app'
+    }
     stages {
         // Step 1: Clone or Pull Repo
         stage('Clone or Pull Repo') {
