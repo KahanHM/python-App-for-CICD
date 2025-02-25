@@ -48,6 +48,7 @@ pipeline {
                         sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
                         sudo apt-get update
                         sudo apt-get install -y docker-ce
+                        sudo usermod -aG docker $USER
                         '''
                     } else {
                         echo 'Docker is already installed.'
@@ -65,7 +66,7 @@ pipeline {
                     echo 'Building Docker Image...'
                     sh '''
                     cd python-App-for-CICD/flask-mongo-app
-                    docker build -t $IMAGE_NAME .
+                    sudo docker build -t $IMAGE_NAME .
                     '''
                 }
             }
