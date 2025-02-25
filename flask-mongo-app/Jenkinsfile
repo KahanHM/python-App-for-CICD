@@ -166,7 +166,7 @@ stage('Install Docker Compose on EC2') {
                         
                         echo 'Deploying application with Docker Compose...'
                         sh """
-                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
+                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} << 'EOF'
                         cd /home/ubuntu
                         sudo docker-compose up -d
                         EOF
