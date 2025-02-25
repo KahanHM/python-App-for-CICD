@@ -150,36 +150,36 @@ stage('Install Docker Compose on EC2') {
 }
 
 
-        // //  Deploy with Docker Compose and Port Forwarding
-        // stage('Deploy with Docker Compose and Port Forwarding') {
-        //     steps {
-        //         withCredentials([
-        //             sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
-        //             string(credentialsId: 'Host', variable: 'Host')
-        //         ]) {
-        //             script {
-        //                 echo 'Copying docker-compose.yml to EC2 instance...'
-        //                 sh """
-        //                 scp -o StrictHostKeyChecking=no -i ${SSH_KEY} ${WORKSPACE}/docker-compose.yml ${USER}@${Host}:/home/ubuntu/
-        //                 """
+        //  Deploy with Docker Compose and Port Forwarding
+        stage('Deploy with Docker Compose and Port Forwarding') {
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
+                    string(credentialsId: 'Host', variable: 'Host')
+                ]) {
+                    script {
+                        echo 'Copying docker-compose.yml to EC2 instance...'
+                        sh """
+                        scp -o StrictHostKeyChecking=no -i ${SSH_KEY} ${WORKSPACE}/docker-compose.yml ${USER}@${Host}:/home/ubuntu/
+                        """
 
-        //                 echo 'Deploying application with Docker Compose...'
-        //                 sh """
-        //                 ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
-        //                 cd /home/ubuntu
-        //                 sudo docker-compose up -d
-        //                 EOF
-        //                 """
+                        echo 'Deploying application with Docker Compose...'
+                        sh """
+                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
+                        cd /home/ubuntu
+                        sudo docker-compose up -d
+                        EOF
+                        """
 
-        //                 echo 'Setting up port forwarding...'
-        //                 sh """
-        //                 ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
-        //                 sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 5000
-        //                 EOF
-        //                 """
-        //             }
-        //         }
-        //     }
-       // }
+                        echo 'Setting up port forwarding...'
+                        sh """
+                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${USER}@${Host} <<EOF
+                        sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 5000
+                        EOF
+                        """
+                    }
+                }
+            }
+       }
     }
 }
