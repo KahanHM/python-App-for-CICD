@@ -86,9 +86,9 @@ pipeline {
 
         // Install Docker on EC2 (only if necessary)
         stage('Install Docker on EC2') {
-            steps {
-            withCredentials([
-        sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
+                steps {
+                withCredentials([
+            sshUserPrivateKey(credentialsId: 'PythonApp', keyFileVariable: 'SSH_KEY', usernameVariable: 'USER'),
         string(credentialsId: 'Host', variable: 'Host')
     ]) {
         script {
@@ -116,7 +116,7 @@ pipeline {
         }
     }
 }
-
+        }
 
         // // Install Docker Compose on EC2 
         // stage('Install Docker Compose on EC2') {
